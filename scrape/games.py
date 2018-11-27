@@ -12,6 +12,9 @@ def parse_game(raw_html):
             return []
         end = header.partition('#')[2]
         gid = end[0:end.find('\r')]
+        status = (end[end.find('\r'):]).strip()
+        if status != "(game finished)":
+            return []
 
         game = html.find_all('div', class_='portlet-body')[3] #for move list
 
