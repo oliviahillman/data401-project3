@@ -58,7 +58,7 @@ def parse_game(raw_html):
 
             if m != "resign": # resign means they ended the game, not that the other player necessarily won
                 move_list.append(m)
-
+            else:
                 resign = True
 
             if turn == "black":
