@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import pandas as pd
 import numpy as np
 import re
@@ -28,7 +30,9 @@ def row_to_features(row):
     move_list = row[1][4]
     moves = list(map(nice_pos_to_loc, filter(lambda s: len(s) > 0, SPLIT_RE.split(move_list))))
     
-    board = np.zeros((13, 13), dtype=np.int8)
+    boards = []
+    
+    board = np.zeros((13, 13, 1), dtype=np.int8)
     current_player = BLACK
     if len(moves) > 1 and moves[1][0] == '*':
         board[swap(dec(moves[0]))] = WHITE
@@ -41,8 +45,13 @@ def row_to_features(row):
         moves = moves[1:]
         current_player = WHITE
         
+    boards.append(board)
+        
     for move in moves:
+        board = board.copy()
         board[dec(move)] = current_player
+        
+        boards.append(board)
         
         if current_player == WHITE:
             current_player = BLACK
@@ -51,23 +60,32 @@ def row_to_features(row):
     
     winner = WHITE if row[1][5] == 'white' else BLACK
     
-    winner_feature = tf.train.Feature(bytes_list=tf.train.BytesList(value=[bytes([winner])]))
-    board_feature = tf.train.Feature(bytes_list=tf.train.BytesList(value=[bytes(board.flatten())]))
-    
     return {
-        'winner': winner_feature,
-        'board': board_feature
+        'boards': boards,
+        'winner': winner
     }
 
 def main():
     df = pd.read_csv(DATA_CSV).astype({'gid': np.int64}).set_index('gid')
+    
+    board_states = []
+    winners = []
+    
+    for row in df.iterrows():
+        features = row_to_features(row)
 
-    with tf.python_io.TFRecordWriter(OUTPUT_TF_RECORD) as writer:
-        for row in df.iterrows():
-            features = tf.train.Features(feature=row_to_features(row))
-            example = tf.train.Example(features=features)
-
-            writer.write(example.SerializeToString())
+        board_states.extend(features['boards'])
+        winners.extend([features['winner']] * len(features['boards']))
+        
+    board_states = np.array(board_states)
+    winners = np.array(winners).reshape((len(winners), 1))
+    
+    print(board_states.shape, winners.shape)
+    
+    with open('data/board_states.npy', 'wb') as boards_file, \
+        open('data/winners.npy', 'wb') as winners_file:
+        np.save(boards_file, board_states)
+        np.save(winners_file, winners)
 
 if __name__ == '__main__':
     main()
