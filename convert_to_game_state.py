@@ -12,8 +12,10 @@ SPLIT_RE = re.compile(r"(\*|[a-zA-Z][0-9]+)")
 
 SPLIT_FLIP_RE = re.compile(r"(\*|[0-9]+[a-zA-Z])")
 
-BLACK = 1
-WHITE = 2
+BLACK = 0
+WHITE = 1
+
+ONCE = True
 
 def nice_pos_to_loc(pos_str, flipped=False):
     if pos_str != '*':
@@ -34,7 +36,6 @@ def swap(t):
     return (t[1], t[0])
 
 def row_to_features(move_list, winner_str, flipped=False):
-    
     reg = SPLIT_RE if not flipped else SPLIT_FLIP_RE
     
     filtered_moves = filter(lambda s: len(s) > 0, reg.split(move_list))
@@ -46,15 +47,17 @@ def row_to_features(move_list, winner_str, flipped=False):
     
     boards = []
     
-    board = np.zeros((13, 13, 1), dtype=np.int8)
+    board = np.zeros((13, 13, 2), dtype=np.int8)
     current_player = BLACK
     if len(moves) > 1 and moves[1][0] == '*':
-        board[swap(dec(moves[0]))] = WHITE
+        x, y = swap(dec(moves[0]))
+        board[x, y, WHITE] = 1
 
         moves = moves[2:]
         current_player = BLACK
     else:
-        board[dec(moves[0])] = BLACK
+        x, y = dec(moves[0])
+        board[x, y, BLACK] = 1
 
         moves = moves[1:]
         current_player = WHITE
@@ -63,7 +66,8 @@ def row_to_features(move_list, winner_str, flipped=False):
         
     for move in moves:
         board = board.copy()
-        board[dec(move)] = current_player
+        x, y = dec(move)
+        board[x, y, current_player] = 1
         
         boards.append(board)
         
@@ -72,7 +76,7 @@ def row_to_features(move_list, winner_str, flipped=False):
         else:
             current_player = WHITE
     
-    winner = WHITE if winner_str == 'white' else BLACK
+    winner = 1 if winner_str == 'black' else 0
     
     return {
         'boards': boards,
