@@ -10,40 +10,55 @@ import numpy as np
 
 class ModelPlayer(Player):
     
-    def __init__(self, ident, hex_model):
-        """Create a model based player, with a given identity.
-        
-        ident is either 1 (BLACK) or 2 (WHITE)
-        """
-        self.ident = ident
-        self.board = np.zeros((13, 13, 1), dtype=np.int8)
+    def __init__(self, hex_model):
+        """Create a model based player, with a given model"""
         self.hex_model = hex_model
+        self.stats = []
+        
+    def reset_stats(self):
+        self.stats = []
     
     def move(self, board):
         possibleMoves = board.getPossibleMoves()
         random.shuffle(possibleMoves)
+        
+        converted_board = self.canonicalize_board(board)
         if possibleMoves:
             possible_moves = [(pos, dec(nice_pos_to_loc(pos))) for pos in possibleMoves]
-            boards = np.array([self.apply_move(move) for _, move in possible_moves ])
+            boards = np.array([apply_move(converted_board, move, self.role) for _, move in possible_moves ])
             predictions = self.hex_model.predict(boards)
+
+            chosen_move = possible_moves[np.argmax(predictions)][0]
             
-            chosen_idx = np.argmax(predictions[:, self.ident - 1])
-            
-            new_board = boards[chosen_idx]
-            chosen_move = possible_moves[chosen_idx][0]
-            
-            self.board = new_board
+            self.stats.append(predictions)
 
             return chosen_move
         else:
             raise Exception("No possible moves to make.")
             
-    def apply_move(self, move):
-        board = self.board.copy()
+    def canonicalize_board(self, board):
+        given_board = board.getStateForPlayer(BLACK if self.role == "black" else WHITE)
         
-        board[move] = self.ident
+        if self.role == "black":
+            black_board = (given_board == 1).astype(np.int8)
+            white_board = (given_board == -1).astype(np.int8)
+        else:
+            white_board = (given_board == 1).astype(np.int8)
+            black_board = (given_board == -1).astype(np.int8)
+
+        final_board = np.stack([black_board, white_board], axis=-1)
         
-        return board
+        return final_board
+    
+
+def apply_move(board, move, player):
+    board = board.copy()
+    x, y = move
+    player_idx = (BLACK - 1) if player == "black" else (WHITE - 1)
+    
+    board[x, y, player_idx] = 1
+    
+    return board
 
 def nice_pos_to_loc(pos_pair):
     return (pos_pair[0], ord(pos_pair[1].lower()) - 96)
@@ -54,17 +69,14 @@ def dec(t):
 BLACK = 1
 WHITE = 2
 
-def play_game(model_black, model_white, verbose=False):
-    p1 = ModelPlayer(BLACK, model_black)
-    p2 = ModelPlayer(WHITE, model_white)
-    
+def play_game(p1, p2, verbose=False):    
     game = Game(p1, p2)
     
     move_list, winner = game.play(verbose=verbose)
     game_states = row_to_features(move_list, winner, flipped=True)
     boards = np.array(game_states['boards'])
     
-    stretched_winner = np.array([[1.0, 0.0] if game_states['winner']==BLACK else [0.0, 1.0] \
+    stretched_winner = np.array([1 if game_states['winner']==BLACK else 0 \
                                  for i in range(len(game_states['boards']))])
     
     return boards, stretched_winner, winner

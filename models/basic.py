@@ -11,22 +11,30 @@ class BasicHexModel(HexModel):
     
     def __init__(self):
         self.model = tf.keras.Sequential([
-            Conv2D(32, kernel_size=(5, 5), strides=(1, 1),
-                          data_format='channels_last',
-                          activation='relu',
-                          input_shape=(13, 13, 1)),
+            Conv2D(128,
+                   kernel_size=(3, 3),
+                   strides=(1, 1),
+                   data_format='channels_last',
+                   activation='relu',
+                   padding='same',
+                   input_shape=(13, 13, 2)),
+            Conv2D(64,
+                   kernel_size=(3, 3),
+                   strides=(1, 1),
+                   activation='relu',
+                   padding='same'),
             MaxPool2D(pool_size=(2, 2), strides=(2, 2)),
             Conv2D(64, (3, 3), activation='relu'),
             MaxPool2D(pool_size=(2, 2)),
             Flatten(),
             Dense(128, activation='relu'),
-            Dense(2, activation='softmax')
+            Dense(1, activation='sigmoid')
         ])
         
         self.model.summary()
         
         self.model.compile(optimizer=tf.train.AdamOptimizer(START_LEARNING_RATE),
-              loss='categorical_crossentropy',
+              loss='binary_crossentropy',
               metrics=['mae'])
 
     def predict(self, boards, **kwargs):
