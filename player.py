@@ -21,13 +21,16 @@ class ModelPlayer(Player):
     
     def move(self, board):
         possibleMoves = board.getPossibleMoves()
+        random.shuffle(possibleMoves)
         if possibleMoves:
-            converted_moves = ((pos, dec(nice_pos_to_loc(pos))) for pos in possibleMoves)
+            possible_moves = [(pos, dec(nice_pos_to_loc(pos))) for pos in possibleMoves]
+            boards = np.array([self.apply_move(move) for _, move in possible_moves ])
+            predictions = self.hex_model.predict(boards)
             
-            new_board_positions = [(nice_pos, *self.eval_move(move)) for nice_pos, move in converted_moves]
+            chosen_idx = np.argmax(predictions[:, self.ident - 1])
             
-            chosen_move, value, new_board = max(new_board_positions,
-                                                key=lambda new_pos: new_pos[1][self.ident - 1])
+            new_board = boards[chosen_idx]
+            chosen_move = possible_moves[chosen_idx][0]
             
             self.board = new_board
 
@@ -35,15 +38,13 @@ class ModelPlayer(Player):
         else:
             raise Exception("No possible moves to make.")
             
-    def eval_move(self, move):
+    def apply_move(self, move):
         board = self.board.copy()
         
         board[move] = self.ident
         
-        result = self.hex_model.predict(board)
-        
-        return (result[0], board)
-            
+        return board
+
 def nice_pos_to_loc(pos_pair):
     return (pos_pair[0], ord(pos_pair[1].lower()) - 96)
     
@@ -53,15 +54,17 @@ def dec(t):
 BLACK = 1
 WHITE = 2
 
-def play_game(model_black, model_white):
+def play_game(model_black, model_white, verbose=False):
     p1 = ModelPlayer(BLACK, model_black)
     p2 = ModelPlayer(WHITE, model_white)
     
     game = Game(p1, p2)
     
-    move_list, winner = game.play(verbose=True)
+    move_list, winner = game.play(verbose=verbose)
     game_states = row_to_features(move_list, winner, flipped=True)
-    boards = game_states['boards']
-    stretched_winner = [game_states['winner']] * len(boards)
+    boards = np.array(game_states['boards'])
     
-    return boards, stretched_winner
+    stretched_winner = np.array([[1.0, 0.0] if game_states['winner']==BLACK else [0.0, 1.0] \
+                                 for i in range(len(game_states['boards']))])
+    
+    return boards, stretched_winner, winner
