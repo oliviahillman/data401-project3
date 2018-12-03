@@ -10,13 +10,20 @@ OUTPUT_TF_RECORD = "data/full_dataset.tfrecord"
 
 SPLIT_RE = re.compile(r"(\*|[a-zA-Z][0-9]+)")
 
+SPLIT_FLIP_RE = re.compile(r"(\*|[0-9]+[a-zA-Z])")
+
 BLACK = 1
 WHITE = 2
 
-def nice_pos_to_loc(pos_str):
+def nice_pos_to_loc(pos_str, flipped=False):
     if pos_str != '*':
-        alpha_val = ord(pos_str[0].lower()) - 96
-        return (alpha_val, int(pos_str[1:]))
+        if flipped:
+            alpha_val = ord(pos_str[-1].lower()) - 96
+            num_val = int(pos_str[:-1])
+        else:
+            alpha_val = ord(pos_str[0].lower()) - 96
+            num_val = int(pos_str[1:])
+        return (alpha_val, num_val)
     else:
         return (pos_str, None)
     
@@ -26,9 +33,16 @@ def dec(t):
 def swap(t):
     return (t[1], t[0])
 
-def row_to_features(row):
-    move_list = row[1][4]
-    moves = list(map(nice_pos_to_loc, filter(lambda s: len(s) > 0, SPLIT_RE.split(move_list))))
+def row_to_features(move_list, winner_str, flipped=False):
+    
+    reg = SPLIT_RE if not flipped else SPLIT_FLIP_RE
+    
+    filtered_moves = filter(lambda s: len(s) > 0, reg.split(move_list))
+    
+    if flipped:
+        moves = list(map(lambda pos: nice_pos_to_loc(pos, flipped=True), filtered_moves))
+    else:
+        moves = list(map(nice_pos_to_loc, filtered_moves))
     
     boards = []
     
@@ -58,7 +72,7 @@ def row_to_features(row):
         else:
             current_player = WHITE
     
-    winner = WHITE if row[1][5] == 'white' else BLACK
+    winner = WHITE if winner_str == 'white' else BLACK
     
     return {
         'boards': boards,
@@ -72,7 +86,9 @@ def main():
     winners = []
     
     for row in df.iterrows():
-        features = row_to_features(row)
+        move_list = row[1][4]
+        winner_str = row[1][5]
+        features = row_to_features(move_list, winner_str)
 
         board_states.extend(features['boards'])
         winners.extend([features['winner']] * len(features['boards']))
