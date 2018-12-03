@@ -10,14 +10,14 @@ import numpy as np
 
 class ModelPlayer(Player):
     
-    def __init__(self, ident, predictor):
+    def __init__(self, ident, hex_model):
         """Create a model based player, with a given identity.
         
         ident is either 1 (BLACK) or 2 (WHITE)
         """
         self.ident = ident
-        self.board = np.zeros((13, 13), dtype=np.int8)
-        self.predictor = predictor
+        self.board = np.zeros((13, 13, 1), dtype=np.int8)
+        self.hex_model = hex_model
     
     def move(self, board):
         possibleMoves = board.getPossibleMoves()
@@ -40,9 +40,9 @@ class ModelPlayer(Player):
         
         board[move] = self.ident
         
-        result = self.predictor(board)
+        result = self.hex_model.predict(board)
         
-        return (result, board)
+        return (result[0], board)
             
 def nice_pos_to_loc(pos_pair):
     return (pos_pair[0], ord(pos_pair[1].lower()) - 96)
@@ -59,13 +59,9 @@ def play_game(model_black, model_white):
     
     game = Game(p1, p2)
     
-    move_list, winner = game.play(verbose=False)
+    move_list, winner = game.play(verbose=True)
     game_states = row_to_features(move_list, winner, flipped=True)
     boards = game_states['boards']
     stretched_winner = [game_states['winner']] * len(boards)
     
     return boards, stretched_winner
-
-if __name__ == '__main__':
-    model = lambda board: random.choice([[0, 1], [1, 0]])
-    play_game(model, model)
