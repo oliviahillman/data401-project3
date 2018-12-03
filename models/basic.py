@@ -32,13 +32,13 @@ class BasicHexModel(HexModel):
               loss='categorical_crossentropy',
               metrics=['mae'])
 
-    def predict(self, board):
+    def predict(self, board, **kwargs):
         """Given a board predict the winner using as a 2-vector [black_win_prob, white_win_prob]"""
-        return self.model.predict(np.array([board]))
+        return self.model.predict(np.array([board]), **kwargs)
         
-    def train(self, boards, winners):
+    def train(self, boards, winners, *args, **kwargs):
         """Given a stack of boards and a winner of a game, train the model"""
-        self.model.fit(boards, winners)
+        self.model.fit(boards, winners, *args, **kwargs)
         
     def save(self, fileanem):
         """Serialize model to disk"""
