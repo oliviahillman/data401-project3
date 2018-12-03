@@ -3,6 +3,8 @@
 from hex.player import Player
 from hex.game import Game
 
+from convert_to_game_state import row_to_features
+
 import random
 import numpy as np
 
@@ -51,14 +53,19 @@ def dec(t):
 BLACK = 1
 WHITE = 2
 
-def main():
-    model = lambda board: random.choice([[0, 1], [1, 0]])
-    p1 = ModelPlayer(BLACK, model)
-    p2 = ModelPlayer(WHITE, model)
+def play_game(model_black, model_white):
+    p1 = ModelPlayer(BLACK, model_black)
+    p2 = ModelPlayer(WHITE, model_white)
     
     game = Game(p1, p2)
     
-    game.play(verbose=True)
+    move_list, winner = game.play(verbose=False)
+    game_states = row_to_features(move_list, winner, flipped=True)
+    boards = game_states['boards']
+    stretched_winner = [game_states['winner']] * len(boards)
+    
+    return boards, stretched_winner
 
 if __name__ == '__main__':
-    main()
+    model = lambda board: random.choice([[0, 1], [1, 0]])
+    play_game(model, model)
