@@ -160,7 +160,7 @@ class Board:
             out += (str(i) + (" " * i) + "W\\ ")
             for j in range(1, self.size + 1):
                 if self.state[i, j] == 0:
-                    out += "O "
+                    out += "  "
                 elif self.state[i, j] == 1:
                     out += "B "
                 elif self.state[i, j] == 2:

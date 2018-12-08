@@ -27,8 +27,11 @@ class ModelPlayer(Player):
             possible_moves = [(pos, dec(nice_pos_to_loc(pos))) for pos in possibleMoves]
             boards = np.array([apply_move(converted_board, move, self.role) for _, move in possible_moves ])
             predictions = self.hex_model.predict(boards)
-
-            chosen_move = possible_moves[np.argmax(predictions)][0]
+            
+            if self.role == "black":
+                chosen_move = possible_moves[np.argmax(predictions)][0]
+            else:
+                chosen_move = possible_moves[np.argmin(predictions)][0]
             
             self.stats.append(predictions)
 
