@@ -101,6 +101,7 @@ class Board:
         Returns (bool)
         True if player has won
         """
+        print(self.chains[player])
         for group in self.chains[player]:
             if player == 1:
                 if (

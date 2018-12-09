@@ -13,16 +13,28 @@ class ModelPlayer(Player):
     def __init__(self, hex_model):
         """Create a model based player, with a given model"""
         self.hex_model = hex_model
-        self.stats = []
+
+        self.stats = {
+            'base': [],
+            'preds': [],
+            'moves': [],
+            'count': 0
+        }
         
     def reset_stats(self):
-        self.stats = []
+        self.stats = {
+            'base': [],
+            'preds': [],
+            'moves': [],
+            'count': 0
+        }
     
     def move(self, board):
         possibleMoves = board.getPossibleMoves()
         random.shuffle(possibleMoves)
         
         converted_board = self.canonicalize_board(board)
+        player = BLACK if self.role == "black" else WHITE
         if possibleMoves:
             possible_moves = [(pos, dec(nice_pos_to_loc(pos))) for pos in possibleMoves]
             boards = np.array([apply_move(converted_board, move, self.role) for _, move in possible_moves ])
@@ -33,7 +45,11 @@ class ModelPlayer(Player):
             else:
                 chosen_move = possible_moves[np.argmin(predictions)][0]
             
-            self.stats.append(predictions)
+            self.stats['base'].append(converted_board)
+            self.stats['preds'].append(flatten_predictions(converted_board, boards,
+                                                           predictions, player - 1))
+            self.stats['moves'].append(possible_moves)
+            self.stats['count'] += 1
 
             return chosen_move
         else:
@@ -53,6 +69,12 @@ class ModelPlayer(Player):
         
         return final_board
     
+def flatten_predictions(base_board, new_boards, predictions, player):
+    removed_common = new_boards - base_board[np.newaxis, :]
+    scaled = removed_common * predictions[:, np.newaxis, np.newaxis]
+    flattened = np.sum(scaled, axis=0)
+    
+    return flattened
 
 def apply_move(board, move, player):
     board = board.copy()
