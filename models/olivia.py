@@ -5,7 +5,11 @@ from tensorflow.keras.layers import Input, Dense, Conv2D, MaxPool2D, Flatten, In
 from tensorflow.keras.models import Model
 from . import HexModel
 
-class BasicHexModel(HexModel):
+START_LEARNING_RATE = 0.0024787521766663585
+NUM_EPOCHS = 10
+BATCH_SIZE = 1000
+
+class OliviaModel(HexModel):
 
     def __init__(self):
         # a layer instance is callable on a tensor, and returns a tensor
