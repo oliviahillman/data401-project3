@@ -1,21 +1,21 @@
 import tensorflow as tf
 import numpy as np
 import pandas as pd
-from tensorflow.keras.layers import Input, Dense, Conv2D, MaxPool2D, Flatten, Input, BatchNormalization, LeakyReLU, add, GaussianNoise
+from tensorflow.keras.layers import Input, Dense, Conv2D, MaxPool2D, Flatten, Input, BatchNormalization, LeakyReLU, add
 from tensorflow.keras.models import Model
 from . import HexModel
 
-START_LEARNING_RATE = 1e-3
-RESID_LAYERS = 1
+START_LEARNING_RATE = 1e-4
+RESID_LAYERS = 2
 NOISE_STDDEV = 2
-NUM_FILTERS = 32
+NUM_FILTERS = 8
 
 BLACK = 1
 WHITE = 2
 
 class DeclanModel(HexModel):
 
-    def __init__(self):
+    def __init__(self, exploration=0.25, dir_alpha=0.03):
         # a layer instance is callable on a tensor, and returns a tensor
         inputs = Input(shape=(13, 13, 3))
         
@@ -29,7 +29,6 @@ class DeclanModel(HexModel):
             x = residual_layer(x)
         
         x = BatchNormalization()(x)
-        x = GaussianNoise(NOISE_STDDEV)(x)
         x = Flatten()(x)
         x = Dense(32, activation='relu')(x)
         x = Dense(1, activation='sigmoid')(x)
@@ -41,9 +40,18 @@ class DeclanModel(HexModel):
             optimizer=tf.train.RMSPropOptimizer(START_LEARNING_RATE),
             loss='mse',       # mean squared error
             metrics=['mae'])  # mean absolute error
+        
+        self.exploration = exploration
+        self.dir_alpha = dir_alpha
 
     def predict(self, boards, **kwargs):
-        return self.model.predict(boards, **kwargs)
+        predictions = self.model.predict(boards, **kwargs)
+        dir_alpha = np.full_like(predictions.squeeze(), self.dir_alpha)
+        r1 = (1 - self.exploration) * predictions
+        r2 = self.exploration * \
+             np.random.dirichlet(dir_alpha)
+        r = np.expand_dims(r1.squeeze() + r2.squeeze(), axis=-1)
+        return r
 
     def fit(self, boards, winners, *args, **kwargs):
         """Given a stack of boards and a winner of a game, train the model"""

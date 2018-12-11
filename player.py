@@ -130,6 +130,23 @@ def fixed_to_relative_transform(board, player):
     
     return relative_board
 
+def convert_game_fixed_to_relative(boards, winner):
+    players = np.empty((len(boards),))
+    players[::2] = BLACK
+    players[1::2] = WHITE
+        
+    relative_boards = np.array(
+        [fixed_to_relative_transform(b, p) for b, p in zip(boards, players)]
+    )
+
+    stretched_winner = np.full(boards.shape[0], 1, dtype=np.int8)
+    if winner == 'black':
+        stretched_winner[1::2] = 0
+    else:
+        stretched_winner[0::2] = 0
+        
+    return relative_boards, stretched_winner
+
 def play_game(p1, p2, verbose=False, relative=False):    
     game = Game(p1, p2)
     
@@ -141,20 +158,6 @@ def play_game(p1, p2, verbose=False, relative=False):
         stretched_winner = np.array([1 if game_states['winner']==BLACK else 0 \
                                      for i in range(len(game_states['boards']))])
     else:
-        players = np.empty((len(boards),))
-        players[::2] = BLACK
-        players[1::2] = WHITE
-        
-        relative_boards = np.array(
-            [fixed_to_relative_transform(b, p) for b, p in zip(boards, players)]
-        )
-
-        stretched_winner = np.full(boards.shape[0], 1, dtype=np.int8)
-        if winner == 'black':
-            stretched_winner[1::2] = 0
-        else:
-            stretched_winner[0::2] = 0
-            
-        boards = relative_boards
+        boards, stretched_winner = convert_game_fixed_to_relative(boards, winner)
     
     return boards, stretched_winner, winner
