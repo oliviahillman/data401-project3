@@ -6,7 +6,7 @@ from hex.player import RandomPlayer, HumanPlayer
 from collections import Counter
 import random
 from models.natalie_random import NatalieRandomModel
-from models.natalie_random_nopool import NatalieRandomNoPoolModel
+from models.olivia_random import OliviaRandomModel
 from player import ModelPlayer, convert_game_fixed_to_relative
 from display import animate_board_choices
 
@@ -26,11 +26,13 @@ def run():
         { 
             'name': 'natalie_random',
             'class': NatalieRandomModel,
-            'weights': 'weights/natalie_model_random_weights' },
+            'weights': 'weights/natalie_model_random_weights'
+        },
         {
-            'name': 'natalie_random_nopool',
-            'class': NatalieRandomNoPoolModel,
-            'weights': 'weights/natalie_model_random_nopool_weights' }
+            'name': 'olivia_random',
+            'class': OliviaRandomModel,
+            'weights': 'weights/olivia_model_random_weights'
+        }
     ]
 
     random_player = RandomPlayer()
