@@ -5,6 +5,8 @@ from player import *
 from hex.player import RandomPlayer, HumanPlayer
 from collections import Counter
 import random
+from models.natalie import NatalieModel
+from models.olivia import OliviaModel
 from models.natalie_random import NatalieRandomModel
 from models.olivia_random import OliviaRandomModel
 from player import ModelPlayer, convert_game_fixed_to_relative
@@ -23,6 +25,16 @@ NUM_EVAL_TRIALS = 250
 
 def run():
     model_defs = [
+        {
+            'name': 'natalie',
+            'class': NatalieModel,
+            'weights': 'weights/natalie_model_final_weights'
+        },
+        {
+            'name': 'olivia',
+            'class': OliviaModel,
+            'weights': 'weights/olivia_model_final_weights'
+        },
         { 
             'name': 'natalie_random',
             'class': NatalieRandomModel,
