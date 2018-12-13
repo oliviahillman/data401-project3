@@ -46,7 +46,7 @@ def generate_hex_patches(board_dim, size):
     return patches
 
 
-def animate_board_choices(filename, stats, player):
+def animate_board_choices(filename, stats, player, relative=False):
     fig, ax = plt.subplots()
     fig.set_size_inches(16, 11)
     
@@ -77,10 +77,23 @@ def animate_board_choices(filename, stats, player):
         preds = stats['preds'][frame]
         base = stats['base'][frame]
         
-        black_board = BLACK_COLOR_KEY * base[:, :, BLACK - 1]
-        white_board = WHITE_COLOR_KEY * base[:, :, WHITE - 1]
-        
-        complete_board = preds[:, :, player - 1] + black_board + white_board
+        if relative:
+            if player == BLACK:
+                black_board = BLACK_COLOR_KEY * base[:, :, 0]
+                white_board = WHITE_COLOR_KEY * base[:, :, 1]
+            else:
+                black_board = BLACK_COLOR_KEY * base[:, :, 1]
+                white_board = WHITE_COLOR_KEY * base[:, :, 0]
+        else:
+            black_board = BLACK_COLOR_KEY * base[:, :, BLACK - 1]
+            white_board = WHITE_COLOR_KEY * base[:, :, WHITE - 1]
+            
+        if relative:
+            preds_board = preds[:, :, 0]
+        else:
+            preds_board = preds[:, :, player - 1]
+
+        complete_board = preds_board + black_board + white_board
         adjusted_board = np.flip(complete_board, axis=0).flatten()
 
         p.set_array(adjusted_board)
@@ -89,3 +102,5 @@ def animate_board_choices(filename, stats, player):
     ani = FuncAnimation(fig, update, frames=stats['count'], blit=True)
 
     ani.save(filename, writer=writer)
+    
+    plt.close(fig)

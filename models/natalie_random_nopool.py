@@ -9,7 +9,7 @@ START_LEARNING_RATE = 0.00033546262790251185
 NUM_EPOCHS = 3
 BATCH_SIZE = 1000
 
-class NatalieRandomModel(HexModel):
+class NatalieRandomNoPoolModel(HexModel):
 
     def __init__(self):
         # a layer instance is callable on a tensor, and returns a tensor
